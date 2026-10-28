@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Kindle Paperwhite（第7世代）横置き用ダッシュボードを生成する。
+"""Kindle Paperwhite（第7世代）縦置き用ダッシュボードを生成する。
 
 天気: Open-Meteo / ニュース: NHKニュースRSS / 市況: Yahoo Finance
 出力: docs/index.html（Kindleの体験版ブラウザで開くページ）
@@ -21,7 +21,7 @@ import xml.etree.ElementTree as ET
 LOCATION_NAME = "西東京市"
 LAT, LON = 35.7256, 139.5383
 NEWS_RSS = "https://www3.nhk.or.jp/rss/news/cat0.xml"
-NEWS_COUNT = 7
+NEWS_COUNT = 5
 MARKETS = [  # (表示名, Yahoo Financeのシンボル, 単位, 小数桁)
     ("ドル円", "JPY=X", "円", 2),
     ("日経平均", "^N225", "円", 0),
@@ -153,7 +153,7 @@ def icon(kind, size, night=False):
             ).format(s=size, b=body)
 
 
-UMBRELLA = ('<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#000" '
+UMBRELLA = ('<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#000" '
             'stroke-width="2.4" stroke-linecap="round"><path d="M3 12a9 9 0 0 1 18 0z" fill="#000"/>'
             '<path d="M12 12v7a2 2 0 0 0 4 0"/></svg>')
 
@@ -184,7 +184,7 @@ def section_current(w):
  <tr><td><span class="k">最高</span>{hi:.0f}°</td><td><span class="k">最低</span>{lo:.0f}°</td><td><span class="k">降水</span>{pop}%</td></tr>
  <tr><td><span class="k">体感</span>{feel:.0f}°</td><td><span class="k">湿度</span>{hum:.0f}%</td><td><span class="k">風</span>{wd} {ws:.0f}m/s</td></tr>
 </table>""".format(
-        loc=esc(LOCATION_NAME), ic=icon(kind, 104, night=not c.get("is_day", 1)),
+        loc=esc(LOCATION_NAME), ic=icon(kind, 96, night=not c.get("is_day", 1)),
         t=c["temperature_2m"], label=esc(label), hi=d["temperature_2m_max"][0],
         lo=d["temperature_2m_min"][0], pop="—" if pop is None else int(pop),
         feel=c["apparent_temperature"], hum=c["relative_humidity_2m"], wd=wd_safe(wind_dir),
@@ -204,7 +204,7 @@ def section_hourly(w, now):
     while start.hour % 3:
         start += dt.timedelta(hours=1)
     cells = []
-    for k in range(8):
+    for k in range(6):
         target = start + dt.timedelta(hours=3 * k)
         if target not in times:
             break
@@ -213,7 +213,7 @@ def section_hourly(w, now):
         pop = h["precipitation_probability"][i]
         cells.append('<td><div class="h-time">{hr}時</div>{ic}<div class="h-temp">{t:.0f}°</div>'
                      '<div class="h-pop">{u}{p}%</div></td>'.format(
-                         hr=target.hour, ic=icon(kind, 58, night=not h["is_day"][i]),
+                         hr=target.hour, ic=icon(kind, 64, night=not h["is_day"][i]),
                          t=h["temperature_2m"][i], u=UMBRELLA, p=0 if pop is None else int(pop)))
     return '<table class="hourly"><tr>' + "".join(cells) + "</tr></table>"
 
@@ -233,7 +233,7 @@ def section_daily(w, now):
         pop = d["precipitation_probability_max"][i]
         rows.append('<tr><td class="d-date">{m}/{dd}<span class="wk">({wk})</span></td><td class="d-ic">{ic}</td>'
                     '<td class="d-temp">{hi:.0f}° / {lo:.0f}°</td><td class="d-pop">{u}{p}%</td></tr>'.format(
-                        m=date.month, dd=date.day, wk=WEEK[date.weekday()], ic=icon(kind, 34),
+                        m=date.month, dd=date.day, wk=WEEK[date.weekday()], ic=icon(kind, 44),
                         hi=d["temperature_2m_max"][i], lo=d["temperature_2m_min"][i], u=UMBRELLA,
                         p="—" if pop is None else int(pop)))
     return ('<div class="h2">この先の天気</div><table class="daily">' + "".join(rows) + "</table>")
@@ -246,7 +246,7 @@ def section_markets(ms):
     stamp = ""
     if times:
         t = dt.datetime.fromtimestamp(max(times), JST)
-        stamp = '<span class="h2-sub">{}/{} {:%H:%M}時点</span>'.format(t.month, t.day, t)
+        stamp = '<span class="h2-sub">{}/{} {:%H:%M}</span>'.format(t.month, t.day, t)
     rows = []
     for m in ms:
         diff = pct = None
@@ -257,7 +257,7 @@ def section_markets(ms):
             chg = ""
         else:
             arrow = "▲" if diff > 0 else ("▼" if diff < 0 else "±")
-            chg = '{a}{d} <span class="pct">({p:+.2f}%)</span>'.format(
+            chg = '{a}{d}<div class="pct">{p:+.2f}%</div>'.format(
                 a=arrow, d=fmt_num(abs(diff), m["digits"] if m["digits"] else 0), p=pct)
         rows.append('<tr><td class="m-name">{n}</td><td class="m-price">{v}<span class="m-unit">{u}</span></td>'
                     '<td class="m-chg">{c}</td></tr>'.format(
@@ -268,7 +268,7 @@ def section_markets(ms):
 def section_news(news):
     if not news:
         return '<div class="h2">主要ニュース</div><div class="nodata">ニュースを取得できませんでした</div>'
-    items = "".join('<li>{}</li>'.format(esc(t)) for t in news)
+    items = "".join('<li>{}</li>'.format(esc(t)) for t in news[:NEWS_COUNT])
     return '<div class="h2">主要ニュース<span class="h2-sub">NHKニュース</span></div><ul class="news">{}</ul>'.format(items)
 
 
@@ -276,71 +276,71 @@ CSS = """
 *{margin:0;padding:0;box-sizing:border-box;-webkit-box-sizing:border-box}
 html,body{background:#fff;color:#000;overflow:hidden;width:100%;height:100%}
 body{font-family:"Noto Sans CJK JP","Noto Sans JP","Hiragino Sans","Hiragino Kaku Gothic ProN",sans-serif}
-#board{position:absolute;left:0;top:0;width:1448px;height:1072px;background:#fff;
+#board{position:absolute;left:0;top:0;width:1072px;height:1240px;background:#fff;padding:20px 28px 0;
  -webkit-transform-origin:0 0;transform-origin:0 0}
-.box{position:absolute}
 table{border-collapse:collapse}
-.date{font-size:36px;font-weight:bold;letter-spacing:1px}
-.clock{font-size:190px;font-weight:bold;line-height:1;letter-spacing:-4px;margin-top:6px}
-.vline{position:absolute;top:36px;width:3px;height:290px;background:#000}
-.tag{display:inline-block;background:#000;color:#fff;font-size:22px;font-weight:bold;padding:3px 12px;letter-spacing:2px}
-.cur{margin-top:8px}
-.cur-ic{width:120px;vertical-align:middle}
-.cur-temp{font-size:86px;font-weight:bold;line-height:1}
-.cur-temp .u{font-size:40px;margin-left:4px}
-.cur-label{font-size:30px;font-weight:bold;margin-top:4px}
-.cur-sub{margin-top:8px;font-size:24px}
-.cur-sub td{padding:2px 34px 2px 0;white-space:nowrap}
-.k{font-size:19px;margin-right:6px;color:#333}
-.hourly{position:absolute;left:36px;top:346px;width:1376px;border-top:3px solid #000;border-bottom:3px solid #000}
-.hourly td{width:12.5%;text-align:center;padding:10px 0 10px;border-left:1px solid #000}
+.top{width:100%}
+.top td{vertical-align:top}
+.top-l{width:470px;border-right:3px solid #000}
+.date{font-size:36px;font-weight:bold}
+.clock{font-size:168px;font-weight:bold;line-height:1;letter-spacing:-4px;margin-top:4px}
+.top-r{padding-left:28px}
+.tag{display:inline-block;background:#000;color:#fff;font-size:24px;font-weight:bold;padding:3px 12px;letter-spacing:2px}
+.cur{margin-top:6px}
+.cur-ic{width:104px;vertical-align:middle}
+.cur-temp{font-size:80px;font-weight:bold;line-height:1}
+.cur-temp .u{font-size:36px;margin-left:4px}
+.cur-label{font-size:34px;font-weight:bold;margin-top:2px}
+.cur-sub{margin-top:6px;font-size:26px}
+.cur-sub td{padding:1px 22px 1px 0;white-space:nowrap}
+.k{font-size:21px;margin-right:5px}
+.hourly{width:100%;margin-top:16px;border-top:3px solid #000;border-bottom:3px solid #000}
+.hourly td{width:16.66%;text-align:center;padding:8px 0;border-left:1px solid #000}
 .hourly td:first-child{border-left:none}
-.h-time{font-size:26px;font-weight:bold}
-.hourly svg{margin:4px 0 0}
-.h-temp{font-size:34px;font-weight:bold}
-.h-pop{font-size:20px}
+.h-time{font-size:30px;font-weight:bold}
+.h-temp{font-size:42px;font-weight:bold;line-height:1.1}
+.h-pop{font-size:25px}
 .h-pop svg,.d-pop svg{margin:0 4px -1px 0}
-.h2{font-size:28px;font-weight:bold;border-bottom:3px solid #000;padding-bottom:6px;margin-bottom:6px}
-.h2-sub{font-size:17px;font-weight:normal;margin-left:14px}
+.h2{font-size:32px;font-weight:bold;border-bottom:3px solid #000;padding-bottom:4px;margin-top:16px;white-space:nowrap}
+.h2-sub{font-size:20px;font-weight:normal;margin-left:14px}
+.mid{width:100%}
+.mid td{vertical-align:top}
+.mid-l{width:500px;padding-right:28px}
 .daily,.markets{width:100%}
-.daily td,.markets td{border-bottom:1px solid #000;padding:8px 0;font-size:27px;vertical-align:middle}
-.d-date{font-weight:bold;width:150px}
-.wk{font-size:20px}
-.d-ic{width:52px}
+.daily td,.markets td{border-bottom:1px solid #000;padding:5px 0;font-size:32px;vertical-align:middle;height:64px}
+.d-date{font-weight:bold;width:160px;white-space:nowrap}
+.wk{font-size:22px}
+.d-ic{width:56px}
 .d-ic svg{display:block}
 .d-temp{font-weight:bold}
-.d-pop{text-align:right;font-size:22px}
-.markets{margin-bottom:0}
-.m-name{font-size:23px;width:130px}
-.m-price{font-size:32px;font-weight:bold}
-.m-unit{font-size:18px;font-weight:normal;margin-left:3px}
-.m-chg{text-align:right;font-size:23px;font-weight:bold}
-.pct{font-size:17px;font-weight:normal}
+.d-pop{text-align:right;font-size:26px}
 .news{list-style:none}
-.news li{font-size:24px;line-height:1.4;padding:10px 0 10px 22px;border-bottom:1px solid #000;
+.news li{font-size:31px;line-height:1.35;padding:8px 0 8px 26px;border-bottom:1px solid #000;
  position:relative;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.news li:before{content:"";position:absolute;left:2px;top:23px;width:10px;height:10px;background:#000}
-.foot{position:absolute;left:36px;right:36px;bottom:14px;font-size:17px;border-top:2px solid #000;padding-top:6px}
+.news li:before{content:"";position:absolute;left:2px;top:24px;width:12px;height:12px;background:#000}
+.m-name{font-size:24px;width:112px;padding-right:10px;white-space:nowrap}
+.markets td.m-price{font-size:34px;font-weight:bold;white-space:nowrap;padding-left:12px}
+.m-unit{font-size:19px;font-weight:normal;margin-left:2px}
+.m-chg{text-align:right;font-size:25px;font-weight:bold;line-height:1.1;white-space:nowrap}
+.pct{font-size:18px;font-weight:normal}
+.foot{position:absolute;left:28px;right:28px;bottom:10px;font-size:19px;border-top:2px solid #000;padding-top:5px}
 .foot .r{float:right}
-.nodata{font-size:24px;padding:12px 0}
+.nodata{font-size:28px;padding:10px 0}
 """
 
 JS = """
 (function(){
- var W=1448,H=1072,WEEK='日月火水木金土';
+ var W=1072,H=1240,WEEK='日月火水木金土';
  function pad(n){return n<10?'0'+n:''+n;}
  function tick(){
-  var d=new Date();
-  document.getElementById('clock').innerHTML=d.getHours()+':'+pad(d.getMinutes());
-  document.getElementById('date').innerHTML=d.getFullYear()+'年'+(d.getMonth()+1)+'月'+d.getDate()+'日（'+WEEK.charAt(d.getDay())+'）';
+  var d=new Date(new Date().getTime()+9*3600000);
+  document.getElementById('clock').innerHTML=d.getUTCHours()+':'+pad(d.getUTCMinutes());
+  document.getElementById('date').innerHTML=d.getUTCFullYear()+'年'+(d.getUTCMonth()+1)+'月'+d.getUTCDate()+'日（'+WEEK.charAt(d.getUTCDay())+'）';
  }
  function fit(){
   var w=window.innerWidth||document.documentElement.clientWidth,h=window.innerHeight||document.documentElement.clientHeight;
-  var q=location.search,rot=h>w;
-  if(q.indexOf('rotate=1')>=0)rot=true; if(q.indexOf('rotate=0')>=0)rot=false;
-  var s=rot?Math.min(h/W,w/H):Math.min(w/W,h/H);
-  var t=rot?'translate('+(H*s)+'px,0) rotate(90deg) scale('+s+')':'scale('+s+')';
-  if(rot&&q.indexOf('flip=1')>=0)t='translate(0,'+(W*s)+'px) rotate(-90deg) scale('+s+')';
+  var s=Math.min(w/W,h/H);
+  var t='scale('+s+')';
   var b=document.getElementById('board').style;
   b.webkitTransform=t;b.transform=t;
  }
@@ -356,15 +356,13 @@ def build_html(d):
     date_str = "{}年{}月{}日（{}）".format(now.year, now.month, now.day, WEEK[now.weekday()])
     body = """
 <div id="board">
- <div class="box" style="left:36px;top:30px;width:560px">
-  <div class="date" id="date">{date}</div>
-  <div class="clock" id="clock">{clock}</div>
- </div>
- <div class="vline" style="left:640px"></div>
- <div class="box" style="left:676px;top:34px;width:740px">{current}</div>
+ <table class="top"><tr>
+  <td class="top-l"><div class="date" id="date">{date}</div><div class="clock" id="clock">{clock}</div></td>
+  <td class="top-r">{current}</td>
+ </tr></table>
  {hourly}
- <div class="box" style="left:36px;top:556px;width:612px">{daily}<div style="height:20px"></div>{markets}</div>
- <div class="box" style="left:690px;top:556px;width:722px">{news}</div>
+ <table class="mid"><tr><td class="mid-l">{daily}</td><td class="mid-r">{markets}</td></tr></table>
+ {news}
  <div class="foot"><span>更新 {upd}</span><span class="r">天気: Open-Meteo ／ ニュース: NHK ／ 市況: Yahoo Finance</span></div>
 </div>""".format(date=date_str, clock="{}:{:02d}".format(now.hour, now.minute),
                  current=section_current(w), hourly=section_hourly(w, now),
