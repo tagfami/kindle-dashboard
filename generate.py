@@ -307,15 +307,15 @@ table{border-collapse:collapse}
 .mid td{vertical-align:top}
 .mid-l{width:500px;padding-right:28px}
 .daily,.markets{width:100%}
-.daily td,.markets td{border-bottom:1px solid #000;padding:5px 0;font-size:32px;vertical-align:middle;height:64px}
-.d-date{font-weight:bold;width:160px;white-space:nowrap}
+.daily td,.markets td{border-bottom:1px solid #000;padding:5px 0;font-size:30px;vertical-align:middle;height:64px;white-space:nowrap}
+.d-date{font-weight:bold;width:150px;white-space:nowrap}
 .wk{font-size:22px}
 .d-ic{width:56px}
 .d-ic svg{display:block}
 .d-temp{font-weight:bold}
 .d-pop{text-align:right;font-size:26px}
 .news{list-style:none}
-.news li{font-size:31px;line-height:1.35;padding:8px 0 8px 26px;border-bottom:1px solid #000;
+.news li{font-size:30px;line-height:1.35;padding:8px 0 8px 26px;border-bottom:1px solid #000;
  position:relative;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .news li:before{content:"";position:absolute;left:2px;top:24px;width:12px;height:12px;background:#000}
 .m-name{font-size:24px;width:112px;padding-right:10px;white-space:nowrap}
